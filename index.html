@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATC Procedural Strip Deck Builder (Leg Time Edition)</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #1a252f;
+            color: #ecf0f1;
+            padding: 15px;
+        }
+        .builder-panel {
+            background-color: #2c3e50;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #bdc3c7;
+            max-width: 1100px;
+            margin: 0 auto 25px auto;
+        }
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            color: #f1c40f;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 8px;
+            background-color: #1a252f;
+            color: #fff;
+            border: 1px solid #7f8c8d;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+        button.btn-add { background-color: #2980b9; color: white; border: none; font-weight: bold; cursor: pointer;}
+        button.btn-add:hover { background-color: #3498db; }
+        button.btn-compile { background-color: #27ae60; font-weight: bold; font-size: 16px; cursor: pointer; border: none; margin-top: 10px; height: 40px;}
+        button.btn-compile:hover { background-color: #2ecc71; }
+        button.btn-clear { background-color: #c0392b; font-weight: bold; border: none; cursor: pointer;}
+        button.btn-clear:hover { background-color: #e74c3c; }
+        
+        .route-tracker {
+            background-color: #111;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #f1c40f;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+
+        /* Physical Strip Stack Display styling */
+        .strip-deck {
+            display: flex;
+            flex-direction: column-reverse; /* Stacks strips sequentially from bottom up */
+            gap: 15px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .atc-strip {
+            background-color: #ffffff;
+            color: #000000;
+            border: 4px solid #f1c40f; 
+            border-radius: 4px;
+            display: grid;
+            grid-template-columns: 80px 130px 90px 90px 80px 1fr 140px;
+            font-weight: bold;
+            font-size: 12px;
+            height: 80px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+        .atc-strip.arrival-strip { border-color: #2980b9; } 
+        
+        .box {
+            border-right: 1px solid #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .box:last-child { border-right: none; }
+        
+        .sub-box-top { border-bottom: 1px solid #000; width: 100%; height: 50%; display: flex; justify-content: center; align-items: center; }
+        .sub-box-bottom { width: 100%; height: 50%; display: flex; justify-content: center; align-items: center; }
+        
+        .diagonal-box {
+            background: linear-gradient(to top right, transparent calc(50% - 0.5px), #000 calc(50% - 0.5px), #000 calc(50% + 0.5px), transparent calc(50% + 0.5px));
+        }
+        
+        .fix-title { font-size: 18px; font-weight: 900; letter-spacing: 1px; }
+        .callsign-text { font-size: 18px; font-weight: 900; color: #111; }
+        .pink-text { color: #d81b60; font-size: 15px; font-weight: 900; }
+        .pencil-text { color: #2980b9; font-size: 11px; }
+        .leg-time-badge { font-size: 11px; color: #d81b60; font-weight: 900; background: #fce4ec; padding: 2px 5px; border-radius: 3px; margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+<div class="builder-panel">
+    <div class="grid-inputs">
+        <div>
+            <label>Callsign</label>
+            <input type="text" id="callsign" value="CPA788">
+        </div>
+        <div>
+            <label>A/C Type</label>
+            <input type="text" id="acType" value="B789">
+        </div>
+        <div>
+            <label>Speed Group</label>
+            <select id="acSpeed">
+                <option value="230">DH8/ATR (230 kts)</option>
+                <option value="300">C130 (300 kts)</option>
+                <option value="450">A320/B737 (450 kts)</option>
+                <option value="480" selected>A330/A340/A350/B787 (480 kts)</option>
+                <option value="500">B777/A380/B747 (500 kts)</option>
+            </select>
+        </div>
+        <div>
+            <label>Flight Level (RVSM)</label>
+            <input type="text" id="flightLevel" value="390">
+        </div>
+        <div>
+            <label>DEP Airport</label>
+            <input type="text" id="depArpt" value="HKJK">
+        </div>
+        <div>
+            <label>DEST Airport</label>
+            <input type="text" id="destArpt" value="WSSS">
+        </div>
+        <div>
+            <label>Initial Entry Time</label>
+            <input type="text" id="entryTime" value="0123" placeholder="hhmm">
+        </div>
+    </div>
+
+    <div style="border-top: 1px solid #7f8c8d; padding-top:15px; display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap:10px;">
+        <div>
+            <label>Step 1: Select Airway context</label>
+            <select id="airwaySelector" onchange="populateWaypoints()">
+                <option value="">-- Choose Airway --</option>
+                <option value="G465_M512">G465/M512</option>
+                <option value="P756">P756</option>
+                <option value="L894">L894</option>
+                <option value="R329">R329</option>
+                <option value="R457">R457</option>
+                <option value="M513">M513</option>
+                <option value="G454">G454</option>
+                <option value="L756">L756</option>
+                <option value="T501">T501</option>
+                <option value="T602">T602</option>
+                <option value="L899">L899</option>
+            </select>
+        </div>
+        <div>
+            <label>Step 2: Choose Target Fix</label>
+            <select id="fixSelector"></select>
+        </div>
+        <div>
+            <label>&nbsp;</label>
+            <button class="btn-add" onclick="addFixToRoute()">+ Add Fix</button>
+        </div>
+        <div>
+            <label>&nbsp;</label>
+            <button class="btn-clear" onclick="clearRoute()">Clear Route</button>
+        </div>
+    </div>
+
+    <div class="route-tracker">
+        <strong>Active Custom Path Routing:</strong> <span id="routeDisplay">None (Add fixes to begin building flight path)</span>
+    </div>
+
+    <button class="btn-compile" onclick="compileDeck()">Compile Strip Deck</button>
+</div>
+
+<div class="strip-deck" id="deckContainer">
+    </div>
+
+<script>
+// Official segment distance values derived straight from your operational charts
+const segmentRegistry = {
+    "BIBGO-LELEM": 201, "LELEM-MLE": 50, "MLE-AQAXA": 50, "AQAXA-DUKET": 131, "DUKET-SUNAN": 206,
+    "POXOD-HA": 47, "HA-KAGUM": 104, "KAGUM-MLE": 50, "MLE-ATISA": 50, "ATISA-GAN": 243, "GAN-RUGBI": 115,
+    "OSERA-MUGBA": 88, "MUGBA-MLE": 50, "MANRU-SABDI": 48, "UBKIN-SABDI": 40, "SABDI-GOKAM": 178, "GOKAM-MLE": 50,
+    "PADLA-SABDI": 65, "SABDI-DUKET": 152, "DUKET-GAN": 219, "SEBLO-DOPDO": 211, "TELIG-DOPDO": 232,
+    "DOPDO-MLE": 50, "MLE-ESKOL": 50, "ESKOL-OBLOG": 50, "OBLOG-ELKEL": 197, "RULSA-PIKUK": 118,
+    "PIKUK-NAZIR": 48, "NAZIR-MLE": 50, "GAN-OBLOG": 253, "OBLOG-PIKUK": 30, "PIKUK-UPSIS": 184,
+    "UPSIS-BIBGO": 39, "BIBGO-SERAT": 49, "SERAT-DUMIR": 100, "DUMIR-VRDA": 33, "TELAR-HA": 55
+};
+
+const airwayNodes = {
+    "L894": ["BIBGO", "LELEM", "MLE", "AQAXA", "DUKET", "SUNAN"],
+    "R329": ["POXOD", "HA", "KAGUM", "MLE", "ATISA", "GAN", "RUGBI"],
+    "R457": ["OSERA", "MUGBA", "MLE"],
+    "M513": ["MANRU", "SABDI"],
+    "P756": ["UBKIN", "SABDI", "GOKAM", "MLE"],
+    "G454": ["PADLA", "SABDI", "DUKET", "GAN"],
+    "G465_M512": ["SEBLO", "TELIG", "DOPDO", "MLE", "ESKOL", "OBLOG", "ELKEL"],
+    "L756": ["RULSA", "PIKUK", "NAZIR", "MLE"],
+    "T501": ["GAN", "OBLOG", "PIKUK", "UPSIS", "BIBGO"],
+    "T602": ["BIBGO", "SERAT", "DUMIR", "VRDA"],
+    "L899": ["TELAR", "HA"]
+};
+
+let customBuiltRoute = [];
+
+function populateWaypoints() {
+    const awy = document.getElementById("airwaySelector").value;
+    const select = document.getElementById("fixSelector");
+    select.innerHTML = "";
+    if(!awy) return;
+    airwayNodes[awy].forEach(node => {
+        let opt = document.createElement("option");
+        opt.value = node; opt.textContent = node;
+        select.appendChild(opt);
+    });
+}
+
+function addFixToRoute() {
+    const fix = document.getElementById("fixSelector").value;
+    const awy = document.getElementById("airwaySelector").value;
+    if(!fix) return;
+    customBuiltRoute.push({ fix: fix, airway: awy });
+    updateRouteDisplay();
+}
+
+function clearRoute() { customBuiltRoute = []; updateRouteDisplay(); }
+
+function updateRouteDisplay() {
+    const disp = document.getElementById("routeDisplay");
+    if(customBuiltRoute.length === 0) { disp.textContent = "None"; return; }
+    disp.textContent = customBuiltRoute.map(r => `${r.fix}(${r.airway})`).join(" ➔ ");
+}
+
+function getSegmentDistance(f1, f2) {
+    let key1 = `${f1}-${f2}`, key2 = `${f2}-${f1}`;
+    if (segmentRegistry[key1] !== undefined) return segmentRegistry[key1];
+    if (segmentRegistry[key2] !== undefined) return segmentRegistry[key2];
+    return null; 
+}
+
+function formatTime(totMins) {
+    let m = Math.round(totMins) % 1440;
+    return String(Math.floor(m / 60)).padStart(2,'0') + String(m % 60).padStart(2,'0');
+}
+
+function compileDeck() {
+    const container = document.getElementById("deckContainer");
+    container.innerHTML = "";
+    if(customBuiltRoute.length < 1) return;
+    
+    const callsign = document.getElementById("callsign").value.toUpperCase();
+    const acType = document.getElementById("acType").value.toUpperCase();
+    const speed = parseInt(document.getElementById("acSpeed").value);
+    const fl = document.getElementById("flightLevel").value;
+    const dep = document.getElementById("depArpt").value.toUpperCase();
+    const dest = document.getElementById("destArpt").value.toUpperCase();
+    let currentMins = parseInt(document.getElementById("entryTime").value.substring(0,2))*60 + parseInt(document.getElementById("entryTime").value.substring(2,4));
+
+    for(let i=0; i<customBuiltRoute.length; i++) {
+        let node = customBuiltRoute[i];
+        let eet = 0;
+        
+        if(i > 0) {
+            let dist = getSegmentDistance(customBuiltRoute[i-1].fix, node.fix);
+            if(dist === null) dist = 50; // default safe fallback gap
+            eet = Math.round((dist / speed) * 60);
+            currentMins += eet;
+        }
+        
+        let etoStr = formatTime(currentMins);
+        let isArrival = (dest === "VRMM" && i === customBuiltRoute.length - 1);
+        
+        let strip = document.createElement("div");
+        strip.className = `atc-strip ${isArrival ? 'arrival-strip' : ''}`;
+        strip.innerHTML = `
+            <div class="box diagonal-box">
+                <span style="font-size:11px; font-weight:bold; position:absolute; top:4px; left:6px; color:#d81b60;">
+                    ${eet > 0 ? eet + 'm' : 'START'}
+                </span>
+            </div>
+            <div class="box">
+                <span class="callsign-text">${callsign}</span>
+                <span style="font-size:10px;">N${speed}</span>
+            </div>
+            <div class="box">
+                <div class="sub-box-top">${acType}</div>
+                <div class="sub-box-bottom">${node.airway}</div>
+            </div>
+            <div class="box">
+                <div class="sub-box-top">${dep}</div>
+                <div class="sub-box-bottom">${dest}</div>
+            </div>
+            <div class="box">
+                <span class="pink-text">${fl}</span>
+            </div>
+            <div class="box" style="align-items: flex-start; text-align: left; padding-left:10px;">
+                <span class="pencil-text">${isArrival ? 'TERMINAL ARRIVAL LAYER' : 'ENROUTE SECTOR FLIGHT'}</span>
+                <div class="leg-time-badge">
+                    ${i > 0 ? 'From ' + customBuiltRoute[i-1].fix + ': +' + eet + ' mins' : 'Airway Entry Point'}
+                </div>
+            </div>
+            <div class="box" style="background-color:#fcfcfc;">
+                <span class="fix-title">${node.fix}</span>
+                <span class="pink-text">${etoStr.substring(0,2)}/${etoStr.substring(2,4)}</span>
+            </div>
+        `;
+        container.appendChild(strip);
+    }
+}
+</script>
+
+</body>
+</html>
