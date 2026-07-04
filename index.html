@@ -2,469 +2,384 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ATC Strip Deck Builder</title>
+    <title>ATC Flight Plan Manager</title>
     <style>
-        :root {
-            --bg-color: #12181f;
-            --panel-color: #1f2a38;
-            --text-color: #ecf0f1;
-            --accent-color: #f1c40f;
-            --btn-blue: #2980b9;
-            --btn-green: #27ae60;
-            --btn-red: #c0392b;
-            --strip-yellow: #f39c12;
-            --strip-blue: #2980b9;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Courier New", monospace;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 10px;
-            margin: 0;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .builder-panel {
-            background-color: var(--panel-color);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #34495e;
-            max-width: 800px;
-            margin: 0 auto 15px auto;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .grid-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        @media (max-width: 480px) {
-            .grid-inputs {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        label {
-            display: block;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-            color: var(--accent-color);
-            letter-spacing: 0.5px;
-        }
-
-        select, input, button {
-            width: 100%;
-            padding: 10px;
-            background-color: #12181f;
-            color: #fff;
-            border: 1px solid #4f5d73;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-
-        select:focus, input:focus {
-            border-color: var(--accent-color);
-            outline: none;
-        }
-
-        .route-builder-row {
-            display: grid;
-            grid-template-columns: 1.5fr 1.5fr 1fr;
-            gap: 8px;
-            margin-top: 10px;
-            border-top: 1px solid #34495e;
-            padding-top: 12px;
-        }
-
-        @media (max-width: 600px) {
-            .route-builder-row {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        button {
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        button.btn-add { background-color: var(--btn-blue); color: white; border: none; }
-        button.btn-add:hover { background-color: #3498db; }
-        button.btn-clear { background-color: var(--btn-red); color: white; border: none; }
-        button.btn-clear:hover { background-color: #e74c3c; }
-        button.btn-compile { background-color: var(--btn-green); color: white; border: none; font-size: 16px; margin-top: 12px; padding: 12px; }
-        button.btn-compile:hover { background-color: #2ecc71; }
-
-        .route-tracker {
-            background-color: #0d131a;
-            padding: 10px;
-            border-radius: 6px;
-            border-left: 4px solid var(--accent-color);
-            margin: 12px 0;
-            font-size: 12px;
-            word-break: break-all;
-            line-height: 1.4;
-        }
-
-        /* Responsive Strip Layout */
-        .strip-deck {
-            display: flex;
-            flex-direction: column-reverse;
-            gap: 12px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .atc-strip {
-            background-color: #ffffff;
-            color: #000000;
-            border: 4px solid var(--strip-yellow);
-            border-radius: 6px;
-            display: grid;
-            grid-template-columns: 65px 80px 80px 1fr 110px;
-            font-weight: bold;
-            font-size: 13px;
-            height: 65px;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
-        }
-
-        .atc-strip.arrival-strip { border-color: var(--strip-blue); }
-
-        @media (max-width: 500px) {
-            .atc-strip {
-                grid-template-columns: 55px 65px 65px 1fr 95px;
-                font-size: 11px;
-                height: 55px;
-                border-width: 3px;
-            }
-        }
-
-        .box {
-            border-right: 1px solid #000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            overflow: hidden;
-            position: relative;
-        }
-        .box:last-child { border-right: none; }
-
-        .sub-box-top { border-bottom: 1px solid #000; width: 100%; height: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; }
-        .sub-box-bottom { width: 100%; height: 50%; display: flex; justify-content: center; align-items: center; font-size: 11px; }
-
-        .diagonal-box {
-            background: linear-gradient(to top right, transparent calc(50% - 0.5px), #000 calc(50% - 0.5px), #000 calc(50% + 0.5px), transparent calc(50% + 0.5px));
-        }
-
-        .fix-title { font-size: 16px; font-weight: 900; letter-spacing: 0.5px; }
-        .pink-text { color: #d81b60; font-size: 14px; font-weight: 900; }
-        .pencil-text { color: #2980b9; font-size: 10px; font-weight: bold; }
+        :root { --bg: #12181f; --panel: #1f2a38; --text: #ecf0f1; --even: #3498db; --odd: #f1c40f; }
+        body { font-family: 'Courier New', monospace; background: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .builder-panel { background: var(--panel); padding: 20px; border-radius: 8px; border: 1px solid #4f5d73; margin-bottom: 20px; transition: 0.3s; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+        input, select, button, textarea { padding: 10px; background: #0d131a; color: #fff; border: 1px solid #4f5d73; border-radius: 4px; box-sizing: border-box; font-family: 'Courier New', monospace;}
+        button { cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #34495e; }
+        textarea { width: 100%; resize: vertical; margin-bottom: 10px; }
         
-        @media (max-width: 500px) {
-            .fix-title { font-size: 13px; }
-            .pink-text { font-size: 12px; }
-            .sub-box-top, .sub-box-bottom { font-size: 9px; }
+        .plan-card { padding: 15px; margin-bottom: 15px; border-radius: 4px; position: relative; }
+        
+        /* Updated Strip Colors */
+        .plan-card.even-fl { background-color: var(--even); color: #ffffff; border-left: 5px solid #21618c; }
+        .plan-card.odd-fl { background-color: var(--odd); color: #000000; border-left: 5px solid #b7950b; }
+        
+        .route-path { font-size: 14px; margin-top: 10px; color: #00ff00; background: #000; padding: 10px; border-radius: 4px; white-space: pre-wrap; line-height: 1.4; }
+        .controls { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
+        #currentRouteDisplay { margin: 10px 0; padding: 10px; background: #000; border: 1px dashed #4f5d73; min-height: 20px; color: #aaa; }
+        .section-title { margin-top: 0; color: var(--odd); font-size: 18px; border-bottom: 1px solid #4f5d73; padding-bottom: 5px; margin-bottom: 15px; }
+        
+        /* Lock Mode Styles */
+        body.locked .builder-panel { display: none; }
+        body.locked .controls { display: none; }
+        
+        #lockBar { display: flex; justify-content: space-between; align-items: center; background: #0d131a; padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #4f5d73; }
+        
+        /* Print Styles - Auto Hides UI when printing */
+        @media print {
+            .builder-panel, #lockBar, .controls { display: none !important; }
+            body { background: #fff; color: #000; }
+            .plan-card { background: #fff; border: 1px solid #000; border-left: 5px solid #000; break-inside: avoid; }
+            .route-path { background: #f0f0f0; color: #000; border: 1px solid #ccc; }
         }
-
-        .leg-time-badge { font-size: 10px; color: #d81b60; font-weight: bold; background: #fce4ec; padding: 1px 4px; border-radius: 3px; margin-top: 2px; }
-        .term-override { background: #e8f5e9; color: #2e7d32 !important; }
     </style>
 </head>
 <body>
 
-<div class="builder-panel">
-    <div class="grid-inputs">
-        <div>
-            <label>Speed Group</label>
+<div class="container">
+    <div id="lockBar">
+        <h3 style="margin: 0; color: #ecf0f1;">ATC Board</h3>
+        <button id="lockToggleBtn" onclick="toggleLock()" style="background: #e74c3c;">🔒 Enter Lock / View Mode</button>
+    </div>
+
+    <div class="builder-panel">
+        <h2 class="section-title">Bulk Import (Excel/Text)</h2>
+        <textarea id="bulkPaste" rows="4" placeholder="Paste your Excel table rows here..."></textarea>
+        <button onclick="parseTable()" style="background:#8e44ad; width: 100%;">Parse Table Data</button>
+    </div>
+
+    <div class="builder-panel">
+        <h2 class="section-title">Route Builder & Editor</h2>
+        <div class="grid">
+            <input type="text" id="callsign" placeholder="Callsign">
+            <input type="text" id="fl" placeholder="FL (e.g. 350)">
+            <input type="text" id="entryTime" placeholder="Entry (e.g. 0701)">
+            <input type="text" id="depArpt" placeholder="DEP">
+            <input type="text" id="destArpt" placeholder="DEST">
             <select id="acSpeed">
-                <option value="230">DH8/ATR (230 kts)</option>
-                <option value="300">C130 (300 kts)</option>
-                <option value="450">A320/B737 (450 kts)</option>
-                <option value="480" selected>A330/A340/A350/B787 (480 kts)</option>
-                <option value="500">B777/A380/B747 (500 kts)</option>
+                <option value="230">230 kts</option><option value="300">300 kts</option>
+                <option value="450">450 kts</option><option value="480" selected>480 kts</option><option value="500">500 kts</option>
             </select>
         </div>
-        <div>
-            <label>Initial Entry Time (UTC)</label>
-            <input type="text" id="entryTime" value="0046" placeholder="hhmm" inputmode="numeric" pattern="[0-9]*">
+        
+        <div class="grid">
+            <select id="awy" onchange="populateWaypoints()"><option value="">-- Airway --</option></select>
+            <select id="fix"></select>
+            <button onclick="addFix()" style="background:#2980b9;">+ Add Fix</button>
+            <button onclick="undoFix()" style="background:#e67e22;">Undo Last Fix</button>
         </div>
-        <div>
-            <label>DEP Airport</label>
-            <input type="text" id="depArpt" value="FAJS">
+
+        <div id="currentRouteDisplay">Current Route: (Empty)</div>
+
+        <div class="controls">
+            <button onclick="savePlan()" style="background:#27ae60; flex-grow: 1;">Save Flight Plan</button>
+            <button onclick="clearCurrentForm()" style="background:#c0392b;">Reset Form</button>
         </div>
-        <div>
-            <label>DEST Airport</label>
-            <input type="text" id="destArpt" value="VRMM">
+        
+        <hr style="border-color: #4f5d73; margin: 15px 0;">
+        <div class="controls">
+            <button onclick="sortPlans()" style="background:#f39c12; flex-grow: 1;">Sort by ETA</button>
+            <button onclick="undoSort()" style="background:#d35400; flex-grow: 1;">Undo Sort</button>
+            <button onclick="copyAllPlans()" style="background:#2c3e50; flex-grow: 1;">Copy All Plans</button>
+            <button onclick="exportPlans()">Export (.json)</button>
+            <button onclick="document.getElementById('importFile').click()">Import (.json)</button>
+            <input type="file" id="importFile" onchange="importPlans(event)" style="display:none">
         </div>
     </div>
 
-    <div class="route-builder-row">
-        <div>
-            <label>Airway Segment</label>
-            <select id="airwaySelector" onchange="populateWaypoints()">
-                <option value="">-- Select Airway --</option>
-                <option value="L894">L894</option>
-                <option value="R329">R329</option>
-                <option value="R457">R457</option>
-                <option value="M513">M513</option>
-                <option value="P756">P756</option>
-                <option value="G454">G454</option>
-                <option value="G465_M512">G465 / M512</option>
-                <option value="L756">L756</option>
-                <option value="T501">T501</option>
-                <option value="T602">T602</option>
-                <option value="L899">L899</option>
-            </select>
-        </div>
-        <div>
-            <label>Target Fix</label>
-            <select id="fixSelector"></select>
-        </div>
-        <div style="display: flex; gap: 5px; align-items: flex-end;">
-            <button class="btn-add" style="height:40px;" onclick="addFixToRoute()">+ Add</button>
-            <button class="btn-clear" style="height:40px;" onclick="clearRoute()">Clear</button>
-        </div>
-    </div>
-
-    <div class="route-tracker">
-        <strong>Flight Routing:</strong> <span id="routeDisplay">None (Build route below)</span>
-    </div>
-
-    <button class="btn-compile" onclick="compileDeck()">Compile Strip Deck</button>
+    <div id="planList"></div>
 </div>
 
-<div class="strip-deck" id="deckContainer"></div>
-
 <script>
-// Chart-accurate static lookup matrix matching exactly your uploaded chart data
 const officialChartData = {
-    "L894": {
-        fixes: ["BIBGO", "LELEM", "MLE", "AQAXA", "DUKET", "SUNAN"],
-        legs: {
-            "BIBGO-LELEM": { dist: 201, 230:46, 300:40, 450:26, 480:25, 500:24 },
-            "LELEM-MLE":   { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "MLE-AQAXA":   { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "AQAXA-DUKET": { dist: 131, 230:30, 300:26, 450:17, 480:15, 500:15 },
-            "DUKET-SUNAN": { dist: 206, 230:47, 300:41, 450:26, 480:25, 500:24 }
-        }
-    },
-    "R329": {
-        fixes: ["POXOD", "HA", "KAGUM", "MLE", "ATISA", "GAN", "RUGBI"],
-        legs: {
-            "POXOD-HA":   { dist: 47,  230:10, 300:9,  450:6,  480:6,  500:5 },
-            "HA-KAGUM":   { dist: 104, 230:24, 300:20, 450:13, 480:12, 500:12 },
-            "KAGUM-MLE":  { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "MLE-ATISA":  { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "ATISA-GAN":  { dist: 243, 230:55, 300:48, 450:32, 480:29, 500:28 },
-            "GAN-RUGBI":  { dist: 115, 230:26, 300:23, 450:15, 480:14, 500:13 }
-        }
-    },
-    "R457": {
-        fixes: ["OSERA", "MUGBA", "MLE"],
-        legs: {
-            "OSERA-MUGBA": { dist: 88, 230:20, 300:17, 450:12, 480:11, 500:10 },
-            "MUGBA-MLE":   { dist: 50, 230:11, 300:10, 450:6,  480:6,  500:6 }
-        }
-    },
-    "M513": {
-        fixes: ["MANRU", "SABDI"],
-        legs: {
-            "MANRU-SABDI": { dist: 48, 230:11, 300:9,  450:6,  480:6,  500:5 }
-        }
-    },
-    "P756": {
-        fixes: ["UBKIN", "SABDI", "GOKAM", "MLE"],
-        legs: {
-            "UBKIN-SABDI": { dist: 40,  230:9,  300:8,  450:5,  480:5,  500:5 },
-            "SABDI-GOKAM": { dist: 178, 230:40, 300:35, 450:23, 480:21, 500:21 },
-            "GOKAM-MLE":   { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 }
-        }
-    },
-    "G454": {
-        fixes: ["PADLA", "SABDI", "DUKET", "GAN"],
-        legs: {
-            "PADLA-SABDI": { dist: 65,  230:15, 300:13, 450:8,  480:8,  500:7 },
-            "SABDI-DUKET": { dist: 152, 230:35, 300:30, 450:20, 480:19, 500:18 },
-            "DUKET-GAN":   { dist: 219, 230:49, 300:42, 450:27, 480:25, 500:25 }
-        }
-    },
-    "G465_M512": {
-        fixes: ["SEBLO", "TELIG", "DOPDO", "MLE", "ESKOL", "OBLOG", "ELKEL"],
-        legs: {
-            "SEBLO-DOPDO": { dist: 211, 230:48, 300:42, 450:28, 480:26, 500:26 },
-            "TELIG-DOPDO": { dist: 232, 230:51, 300:45, 450:30, 480:28, 500:28 },
-            "DOPDO-MLE":   { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "MLE-ESKOL":   { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "ESKOL-OBLOG": { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "OBLOG-ELKEL": { dist: 197, 230:46, 300:39, 450:25, 480:23, 500:22 }
-        }
-    },
-    "L756": {
-        fixes: ["RULSA", "PIKUK", "NAZIR", "MLE"],
-        legs: {
-            "RULSA-PIKUK": { dist: 118, 230:27, 300:23, 450:15, 480:14, 500:14 },
-            "PIKUK-NAZIR": { dist: 48,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "NAZIR-MLE":   { dist: 50,  230:11, 300:10, 450:6,  480:6,  500:6 }
-        }
-    },
-    "T501": {
-        fixes: ["GAN", "OBLOG", "PIKUK", "UPSIS", "BIBGO"],
-        legs: {
-            "GAN-OBLOG":   { dist: 253, 230:58, 300:51, 450:32, 480:31, 500:30 },
-            "OBLOG-PIKUK": { dist: 30,  230:8,  300:7,  450:4,  480:4,  500:4 },
-            "PIKUK-UPSIS": { dist: 184, 230:42, 300:37, 450:24, 480:23, 500:22 },
-            "UPSIS-BIBGO": { dist: 39,  230:9,  300:8,  450:5,  480:5,  500:5 }
-        }
-    },
-    "T602": {
-        fixes: ["BIBGO", "SERAT", "DUMIR", "VRDA"],
-        legs: {
-            "BIBGO-SERAT": { dist: 49,  230:11, 300:10, 450:6,  480:6,  500:6 },
-            "SERAT-DUMIR": { dist: 100, 230:23, 300:19, 450:12, 480:11, 500:11 },
-            "DUMIR-VRDA":  { dist: 33,  230:8,  300:7,  450:4,  480:4,  500:4 }
-        }
-    },
-    "L899": {
-        fixes: ["TELAR", "HA"],
-        legs: {
-            "TELAR-HA": { dist: 55, 230:12, 300:11, 450:7, 480:7, 500:7 }
-        }
-    }
+    "L894": { fixes: ["BIBGO", "LELEM", "MLE", "AQAXA", "DUKET", "SUNAN"], legs: {"BIBGO-LELEM": {dist:201, 230:46, 300:40, 450:26, 480:25, 500:24}, "LELEM-MLE": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}, "MLE-AQAXA": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}, "AQAXA-DUKET": {dist:131, 230:30, 300:26, 450:17, 480:15, 500:15}, "DUKET-SUNAN": {dist:206, 230:47, 300:41, 450:26, 480:25, 500:24}} },
+    "R329": { fixes: ["POXOD", "HA", "KAGUM", "MLE", "ATISA", "GAN", "RUGBI"], legs: {"POXOD-HA": {dist:47, 230:10, 300:9, 450:6, 480:6, 500:5}, "HA-KAGUM": {dist:104, 230:24, 300:20, 450:13, 480:12, 500:12}, "KAGUM-MLE": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}, "MLE-ATISA": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}, "ATISA-GAN": {dist:243, 230:55, 300:48, 450:32, 480:29, 500:28}, "GAN-RUGBI": {dist:115, 230:26, 300:23, 450:15, 480:14, 500:13}} },
+    "R457": { fixes: ["OSERA", "MUGBA", "MLE"], legs: {"OSERA-MUGBA": {dist:88, 230:20, 300:17, 450:12, 480:11, 500:10}, "MUGBA-MLE": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}} },
+    "M513": { fixes: ["MANRU", "SABDI"], legs: {"MANRU-SABDI": {dist:48, 230:11, 300:9, 450:6, 480:6, 500:5}} },
+    "P756": { fixes: ["UBKIN", "SABDI", "GOKAM", "MLE"], legs: {"UBKIN-SABDI": {dist:40, 230:9, 300:8, 450:5, 480:5, 500:5}, "SABDI-GOKAM": {dist:178, 230:40, 300:35, 450:23, 480:21, 500:21}, "GOKAM-MLE": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}} },
+    "G454": { fixes: ["PADLA", "SABDI", "DUKET", "GAN"], legs: {"PADLA-SABDI": {dist:65, 230:15, 300:13, 450:8, 480:8, 500:7}, "SABDI-DUKET": {dist:152, 230:35, 300:30, 450:20, 480:19, 500:18}, "DUKET-GAN": {dist:219, 230:49, 300:42, 450:27, 480:25, 500:25}} },
+    "G465_M512": { fixes: ["SEBLO", "TELIG", "DOPDO", "MLE", "ESKOL", "OBLOG", "ELKEL"], legs: {"SEBLO-DOPDO": {dist:211, 230:48, 300:42, 450:28, 480:26, 500:26}, "TELIG-DOPDO": {dist:232, 230:51, 300:45, 450:30, 480:28, 500:28}, "DOPDO-MLE": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}, "MLE-ESKOL": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}, "ESKOL-OBLOG": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}, "OBLOG-ELKEL": {dist:197, 230:46, 300:39, 450:25, 480:23, 500:22}} },
+    "L756": { fixes: ["RULSA", "PIKUK", "NAZIR", "MLE"], legs: {"RULSA-PIKUK": {dist:118, 230:27, 300:23, 450:15, 480:14, 500:14}, "PIKUK-NAZIR": {dist:48, 230:11, 300:10, 450:6, 480:6, 500:6}, "NAZIR-MLE": {dist:50, 230:11, 300:10, 450:6, 480:6, 500:6}} },
+    "T501": { fixes: ["GAN", "OBLOG", "PIKUK", "UPSIS", "BIBGO"], legs: {"GAN-OBLOG": {dist:253, 230:58, 300:51, 450:32, 480:31, 500:30}, "OBLOG-PIKUK": {dist:30, 230:8, 300:7, 450:4, 480:4, 500:4}, "PIKUK-UPSIS": {dist:184, 230:42, 300:37, 450:24, 480:23, 500:22}, "UPSIS-BIBGO": {dist:39, 230:9, 300:8, 450:5, 480:5, 500:5}} },
+    "T602": { fixes: ["BIBGO", "SERAT", "DUMIR", "VRDA"], legs: {"BIBGO-SERAT": {dist:49, 230:11, 300:10, 450:6, 480:6, 500:6}, "SERAT-DUMIR": {dist:100, 230:23, 300:19, 450:12, 480:11, 500:11}, "DUMIR-VRDA": {dist:33, 230:8, 300:7, 450:4, 480:4, 500:4}} },
+    "L899": { fixes: ["TELAR", "HA"], legs: {"TELAR-HA": {dist:55, 230:12, 300:11, 450:7, 480:7, 500:7}} }
 };
 
-let customBuiltRoute = [];
+let plans = [], editingIndex = -1, currentRoute = [];
+let isLocked = false;
+let globalPlanId = 0; // Tracks import order for undoing sort
+
+function toggleLock() {
+    isLocked = !isLocked;
+    const btn = document.getElementById("lockToggleBtn");
+    if(isLocked) {
+        document.body.classList.add("locked");
+        btn.innerHTML = "🔓 Unlock Builder";
+        btn.style.background = "#27ae60";
+    } else {
+        document.body.classList.remove("locked");
+        btn.innerHTML = "🔒 Enter Lock / View Mode";
+        btn.style.background = "#e74c3c";
+    }
+}
+
+function parseTable() {
+    const rawData = document.getElementById("bulkPaste").value.trim();
+    if (!rawData) { alert("Please paste data first."); return; }
+    
+    const rows = rawData.split('\n');
+    let added = 0;
+
+    rows.forEach(row => {
+        let cols = row.split(/\t/);
+        if(cols.length < 5) cols = row.split(/\s{2,}/); 
+
+        if (cols.length >= 6) {
+            try {
+                const callsign = cols[1].trim();
+                const speed = cols[3].replace(/\D/g, '').trim(); 
+                const fl = cols[4].trim();
+                const rawRouteText = cols[5].trim();
+                
+                const routeParts = rawRouteText.split(/\s+/);
+                const dep = routeParts.length > 0 ? routeParts[0] : "";
+                const dest = routeParts.length > 1 ? routeParts[routeParts.length - 1] : "";
+                
+                let time = "0000";
+                if(cols.length >= 7) {
+                    const etaParts = cols[6].split('-');
+                    time = etaParts.length > 1 ? etaParts[1].replace(/\D/g, '').trim() : cols[6].replace(/\D/g, '').trim();
+                }
+
+                plans.push({
+                    id: globalPlanId++, // Save the original order
+                    callsign: callsign,
+                    fl: fl,
+                    time: time,
+                    dep: dep,
+                    dest: dest,
+                    speed: speed,
+                    rawRoute: rawRouteText,
+                    route: [] 
+                });
+                added++;
+            } catch(e) { console.error("Error parsing row: ", row); }
+        }
+    });
+    
+    document.getElementById("bulkPaste").value = "";
+    if (added > 0) { alert(`Successfully imported ${added} draft flight plans!`); }
+    renderPlans();
+}
 
 function populateWaypoints() {
-    const awy = document.getElementById("airwaySelector").value;
-    const select = document.getElementById("fixSelector");
+    const awy = document.getElementById("awy").value;
+    const select = document.getElementById("fix");
     select.innerHTML = "";
-    if(!awy) return;
-    officialChartData[awy].fixes.forEach(node => {
-        let opt = document.createElement("option");
-        opt.value = node; opt.textContent = node;
-        select.appendChild(opt);
+    if(officialChartData[awy]) officialChartData[awy].fixes.forEach(f => select.innerHTML += `<option value="${f}">${f}</option>`);
+}
+
+function updateLiveRouteDisplay() {
+    const display = document.getElementById("currentRouteDisplay");
+    if(currentRoute.length === 0) {
+        display.innerHTML = "Current Route: (Empty)";
+        display.style.color = "#aaa";
+    } else {
+        display.innerHTML = "Current Route: " + currentRoute.map(r => r.fix).join(" ➔ ");
+        display.style.color = "#00ff00";
+    }
+}
+
+function addFix() {
+    const fix = document.getElementById("fix").value;
+    const awy = document.getElementById("awy").value;
+    if(!fix || !awy) return;
+    currentRoute.push({ fix, awy });
+    updateLiveRouteDisplay();
+}
+
+function undoFix() {
+    currentRoute.pop();
+    updateLiveRouteDisplay();
+}
+
+function savePlan() {
+    const timeVal = document.getElementById("entryTime").value || "0000";
+    const p = {
+        id: editingIndex > -1 ? plans[editingIndex].id : globalPlanId++, // Keep original ID if editing
+        callsign: document.getElementById("callsign").value || "N/A", 
+        fl: document.getElementById("fl").value || "000",
+        time: timeVal, 
+        dep: (document.getElementById("depArpt").value || "XXXX").toUpperCase(),
+        dest: (document.getElementById("destArpt").value || "XXXX").toUpperCase(), 
+        speed: document.getElementById("acSpeed").value,
+        rawRoute: editingIndex > -1 ? plans[editingIndex].rawRoute : "",
+        route: [...currentRoute]
+    };
+    if(editingIndex > -1) plans[editingIndex] = p; else plans.push(p);
+    clearCurrentForm(); 
+    renderPlans();
+}
+
+function sortPlans() {
+    if (plans.length === 0) return;
+    plans.sort((a, b) => {
+        let timeA = parseInt(a.time.replace(/\D/g, '')) || 0;
+        let timeB = parseInt(b.time.replace(/\D/g, '')) || 0;
+        return timeA - timeB;
+    });
+    renderPlans();
+}
+
+function undoSort() {
+    if (plans.length === 0) return;
+    // Re-sort based on the original ID assigned during import/creation
+    plans.sort((a, b) => a.id - b.id);
+    renderPlans();
+}
+
+function generateRouteText(p) {
+    if (!p.route || p.route.length === 0) return "No compiled waypoints. Click 'Edit' to build this route.";
+    
+    let routeString = "";
+    let mins = parseInt(p.time.substring(0,2)) * 60 + parseInt(p.time.substring(2,4));
+    if(isNaN(mins)) mins = 0;
+
+    p.route.forEach((node, i) => {
+        let h = String(Math.floor((mins % 1440) / 60)).padStart(2, '0');
+        let m = String(mins % 60).padStart(2, '0');
+        
+        if (i < p.route.length - 1) {
+            let nextNode = p.route[i+1];
+            let data = officialChartData[nextNode.awy].legs[`${node.fix}-${nextNode.fix}`] || officialChartData[nextNode.awy].legs[`${nextNode.fix}-${node.fix}`];
+            let legTime = data ? (data[p.speed] || 6) : 6;
+            if ((p.dep === "VRMM" || p.dest === "VRMM") && data && data.dist === 50) legTime = 10;
+            
+            routeString += `[+${legTime}m] [${node.fix}] [${h}${m}]\n`;
+            mins += legTime; 
+        } else {
+            routeString += `[${node.fix}] [${h}${m}]\n`;
+        }
+    });
+
+    return routeString;
+}
+
+function renderPlans() {
+    const list = document.getElementById("planList");
+    list.innerHTML = "";
+    
+    plans.forEach((p, idx) => {
+        let flNum = parseInt(p.fl);
+        if (isNaN(flNum)) flNum = 0;
+        let isAviationEven = Math.floor(flNum / 10) % 2 === 0;
+        
+        // Determine class based on flight level
+        let flClass = isAviationEven ? 'even-fl' : 'odd-fl';
+        
+        let routeString = generateRouteText(p);
+
+        // ${flClass} applied to the outer .plan-card div
+        list.innerHTML += `
+            <div class="plan-card ${flClass}">
+                <div style="font-weight:bold; font-size: 16px;">
+                    [${p.callsign}] [F${p.fl}] - ${p.dep} TO ${p.dest} - ${p.speed}kts
+                </div>
+                <div class="route-path">${routeString}</div>
+                <div class="controls">
+                    <button onclick="editPlan(${idx})" style="background:#34495e; color:#fff; border:none;">Edit</button>
+                    <button onclick="plans.splice(${idx},1); renderPlans()" style="background:#e74c3c; color:#fff; border:none;">Delete</button>
+                </div>
+            </div>`;
     });
 }
 
-function addFixToRoute() {
-    const fix = document.getElementById("fixSelector").value;
-    const awy = document.getElementById("airwaySelector").value;
-    if(!fix) return;
-    customBuiltRoute.push({ fix: fix, airway: awy });
-    updateRouteDisplay();
+function copyAllPlans() {
+    if(plans.length === 0) { alert("No flight plans to copy!"); return; }
+    let allText = "";
+    plans.forEach(p => {
+        allText += `[${p.callsign}] [F${p.fl}] - ${p.dep} TO ${p.dest} - ${p.speed}kts\n`;
+        allText += generateRouteText(p);
+        allText += `\n-------------------------\n\n`;
+    });
+    
+    navigator.clipboard.writeText(allText).then(() => { alert("All flight plans copied to clipboard!"); });
 }
 
-function clearRoute() { customBuiltRoute = []; updateRouteDisplay(); }
-
-function updateRouteDisplay() {
-    const disp = document.getElementById("routeDisplay");
-    if(customBuiltRoute.length === 0) { disp.textContent = "None"; return; }
-    disp.textContent = customBuiltRoute.map(r => `${r.fix}`).join(" ➔ ");
-}
-
-function getExactLegMinutes(f1, f2, speedGroup) {
-    for (const awy in officialChartData) {
-        const legs = officialChartData[awy].legs;
-        const match1 = `${f1}-${f2}`;
-        const match2 = `${f2}-${f1}`;
-        if (legs[match1]) return { time: legs[match1][speedGroup], dist: legs[match1].dist };
-        if (legs[match2]) return { time: legs[match2][speedGroup], dist: legs[match2].dist };
+function editPlan(idx) {
+    editingIndex = idx;
+    const p = plans[idx];
+    document.getElementById("callsign").value = p.callsign;
+    document.getElementById("fl").value = p.fl;
+    document.getElementById("entryTime").value = p.time;
+    document.getElementById("depArpt").value = p.dep;
+    document.getElementById("destArpt").value = p.dest;
+    
+    let speedDrop = document.getElementById("acSpeed");
+    if(!Array.from(speedDrop.options).some(opt => opt.value === p.speed)) {
+        speedDrop.innerHTML += `<option value="${p.speed}">${p.speed} kts</option>`;
     }
-    return { time: 6, dist: 50 }; // Safe operational fallback estimation
-}
-
-function formatTime(totMins) {
-    let m = Math.round(totMins) % 1440;
-    if (m < 0) m += 1440;
-    return String(Math.floor(m / 60)).padStart(2,'0') + String(m % 60).padStart(2,'0');
-}
-
-function compileDeck() {
-    const container = document.getElementById("deckContainer");
-    container.innerHTML = "";
-    if(customBuiltRoute.length < 1) return;
+    speedDrop.value = p.speed;
     
-    const speedGroup = document.getElementById("acSpeed").value;
-    const dep = document.getElementById("depArpt").value.toUpperCase();
-    const dest = document.getElementById("destArpt").value.toUpperCase();
+    currentRoute = [...p.route];
     
-    let rawTime = document.getElementById("entryTime").value.padStart(4, '0');
-    let currentMins = parseInt(rawTime.substring(0,2))*60 + parseInt(rawTime.substring(2,4));
-
-    let isVRMMTerminalFlight = (dep === "VRMM" || dest === "VRMM");
-
-    for(let i=0; i<customBuiltRoute.length; i++) {
-        let node = customBuiltRoute[i];
-        let eet = 0;
-        let isOverridden = false;
-        
-        if(i > 0) {
-            let prevFix = customBuiltRoute[i-1].fix;
-            let currentFix = node.fix;
-            let segmentData = getExactLegMinutes(prevFix, currentFix, speedGroup);
-            
-            eet = segmentData.time;
-            
-            // Apply the Terminal Space rule for VRMM arrivals/departures
-            if (isVRMMTerminalFlight && segmentData.dist === 50) {
-                if (prevFix === "MLE" || currentFix === "MLE") {
-                    eet = 10;
-                    isOverridden = true;
-                }
+    // Auto-Select Airway Logic (Runs invisibly based on rawRoute)
+    let foundAirways = [];
+    if (p.rawRoute) {
+        let parts = p.rawRoute.split(/\s+/);
+        parts.forEach(part => {
+            let match = Object.keys(officialChartData).find(k => k === part || k.split('_').includes(part));
+            if (match && !foundAirways.includes(match)) {
+                foundAirways.push(match);
             }
-            
-            currentMins += eet;
-        }
-        
-        let etoStr = formatTime(currentMins);
-        let isArrival = (dest === "VRMM" && i === customBuiltRoute.length - 1);
-        
-        let strip = document.createElement("div");
-        strip.className = `atc-strip ${isArrival ? 'arrival-strip' : ''}`;
-        strip.innerHTML = `
-            <div class="box diagonal-box">
-                <span style="font-size:11px; font-weight:bold; position:absolute; top:4px; left:6px; color:#d81b60;">
-                    ${eet > 0 ? eet + 'm' : 'IN'}
-                </span>
-            </div>
-            <div class="box">
-                <div class="sub-box-top" style="font-weight:900; background:#f5f6fa;">DEP</div>
-                <div class="sub-box-bottom">${dep}</div>
-            </div>
-            <div class="box">
-                <div class="sub-box-top" style="font-weight:900; background:#f5f6fa;">DEST</div>
-                <div class="sub-box-bottom">${dest}</div>
-            </div>
-            <div class="box" style="align-items: flex-start; text-align: left; padding-left:10px;">
-                <span class="pencil-text">${node.airway} ROUTE SEGMENT</span>
-                <div class="leg-time-badge ${isOverridden ? 'term-override' : ''}">
-                    ${i > 0 ? '+' + eet + ' min from ' + customBuiltRoute[i-1].fix : 'Airway Sector Entry Point'}
-                </div>
-            </div>
-            <div class="box" style="background-color:#fdfdfd;">
-                <span class="fix-title">${node.fix}</span>
-                <span class="pink-text">${etoStr.substring(0,2)}:${etoStr.substring(2,4)}</span>
-            </div>
-        `;
-        container.appendChild(strip);
+        });
     }
+    
+    let awyDrop = document.getElementById("awy");
+    if (foundAirways.length === 1) {
+        awyDrop.value = foundAirways[0];
+        populateWaypoints();
+    } else {
+        awyDrop.value = "";
+        document.getElementById("fix").innerHTML = "";
+    }
+    
+    updateLiveRouteDisplay();
+    window.scrollTo({ top: 0, behavior: 'smooth' }); 
 }
-</script>
 
+function clearCurrentForm() { 
+    editingIndex = -1; 
+    currentRoute = []; 
+    document.querySelectorAll('input[type="text"]').forEach(i => i.value = ''); 
+    document.getElementById("awy").value = "";
+    document.getElementById("fix").innerHTML = "";
+    updateLiveRouteDisplay();
+}
+
+function exportPlans() {
+    const blob = new Blob([JSON.stringify(plans)], {type: 'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'flights.json'; a.click();
+}
+
+function importPlans(e) {
+    const reader = new FileReader();
+    reader.onload = (ev) => { 
+        plans = JSON.parse(ev.target.result); 
+        // Ensure imported plans have IDs so Undo Sort doesn't break
+        plans.forEach(pl => { if(pl.id === undefined) pl.id = globalPlanId++; });
+        renderPlans(); 
+    };
+    reader.readAsText(e.target.files[0]);
+}
+
+Object.keys(officialChartData).forEach(a => document.getElementById("awy").innerHTML += `<option value="${a}">${a}</option>`);
+</script>
 </body>
 </html>
