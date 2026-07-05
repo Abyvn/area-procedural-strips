@@ -16,7 +16,7 @@
         
         .plan-card { padding: 15px; margin-bottom: 15px; border-radius: 4px; position: relative; }
         
-        /* Updated Strip Colors */
+        /* Full Background Strip Colors */
         .plan-card.even-fl { background-color: var(--even); color: #ffffff; border-left: 5px solid #21618c; }
         .plan-card.odd-fl { background-color: var(--odd); color: #000000; border-left: 5px solid #b7950b; }
         
@@ -113,7 +113,7 @@ const officialChartData = {
 
 let plans = [], editingIndex = -1, currentRoute = [];
 let isLocked = false;
-let globalPlanId = 0; // Tracks import order for undoing sort
+let globalPlanId = 0;
 
 function toggleLock() {
     isLocked = !isLocked;
@@ -158,7 +158,7 @@ function parseTable() {
                 }
 
                 plans.push({
-                    id: globalPlanId++, // Save the original order
+                    id: globalPlanId++, 
                     callsign: callsign,
                     fl: fl,
                     time: time,
@@ -191,7 +191,7 @@ function updateLiveRouteDisplay() {
         display.innerHTML = "Current Route: (Empty)";
         display.style.color = "#aaa";
     } else {
-        display.innerHTML = "Current Route: " + currentRoute.map(r => r.fix).join(" ➔ ");
+        display.innerHTML = "Current Route: " + currentRoute.map(r => `${r.fix} (${r.awy})`).join(" ➔ ");
         display.style.color = "#00ff00";
     }
 }
@@ -212,7 +212,7 @@ function undoFix() {
 function savePlan() {
     const timeVal = document.getElementById("entryTime").value || "0000";
     const p = {
-        id: editingIndex > -1 ? plans[editingIndex].id : globalPlanId++, // Keep original ID if editing
+        id: editingIndex > -1 ? plans[editingIndex].id : globalPlanId++, 
         callsign: document.getElementById("callsign").value || "N/A", 
         fl: document.getElementById("fl").value || "000",
         time: timeVal, 
@@ -239,7 +239,6 @@ function sortPlans() {
 
 function undoSort() {
     if (plans.length === 0) return;
-    // Re-sort based on the original ID assigned during import/creation
     plans.sort((a, b) => a.id - b.id);
     renderPlans();
 }
@@ -247,9 +246,24 @@ function undoSort() {
 function generateRouteText(p) {
     if (!p.route || p.route.length === 0) return "No compiled waypoints. Click 'Edit' to build this route.";
     
+    // Strict Speed Validation & Color Mapping
+    const speedColors = {
+        "230": "#9b59b6", // Purple
+        "300": "#2ecc71", // Green
+        "450": "#3498db", // Blue
+        "480": "#ffffff", // White
+        "500": "#e74c3c"  // Red
+    };
+
+    if (!speedColors[p.speed]) {
+        return `<span style="color: #e74c3c; font-weight: bold; background: #330000; padding: 5px;">[ERROR] Calculation halted: Invalid speed (${p.speed} kts). Must be 230, 300, 450, 480, or 500.</span>`;
+    }
+
     let routeString = "";
     let mins = parseInt(p.time.substring(0,2)) * 60 + parseInt(p.time.substring(2,4));
     if(isNaN(mins)) mins = 0;
+
+    let baseColor = speedColors[p.speed];
 
     p.route.forEach((node, i) => {
         let h = String(Math.floor((mins % 1440) / 60)).padStart(2, '0');
@@ -259,12 +273,25 @@ function generateRouteText(p) {
             let nextNode = p.route[i+1];
             let data = officialChartData[nextNode.awy].legs[`${node.fix}-${nextNode.fix}`] || officialChartData[nextNode.awy].legs[`${nextNode.fix}-${node.fix}`];
             let legTime = data ? (data[p.speed] || 6) : 6;
-            if ((p.dep === "VRMM" || p.dest === "VRMM") && data && data.dist === 50) legTime = 10;
             
-            routeString += `[+${legTime}m] [${node.fix}] [${h}${m}]\n`;
+            // Fixed VRMM Rule: Must be a VRMM flight, 50nm dist, AND the leg must explicitly connect to the MLE fix
+            let isVRMM50nmLeg = false;
+            if ((p.dep === "VRMM" || p.dest === "VRMM") && data && data.dist === 50 && (node.fix === "MLE" || nextNode.fix === "MLE")) {
+                legTime = 10;
+                isVRMM50nmLeg = true;
+            }
+            
+            let timeString = "";
+            if (isVRMM50nmLeg) {
+                timeString = `<span style="color:#ff00ff; font-weight:bold;">+${legTime}m</span>`;
+            } else {
+                timeString = `<span style="color:${baseColor}; font-weight:bold;">+${legTime}m</span>`;
+            }
+            
+            routeString += `[${timeString}] [${nextNode.awy}] [${node.fix}] [${h}${m}]\n`;
             mins += legTime; 
         } else {
-            routeString += `[${node.fix}] [${h}${m}]\n`;
+            routeString += `[----] [${node.awy}] [${node.fix}] [${h}${m}]\n`;
         }
     });
 
@@ -279,13 +306,9 @@ function renderPlans() {
         let flNum = parseInt(p.fl);
         if (isNaN(flNum)) flNum = 0;
         let isAviationEven = Math.floor(flNum / 10) % 2 === 0;
-        
-        // Determine class based on flight level
         let flClass = isAviationEven ? 'even-fl' : 'odd-fl';
-        
         let routeString = generateRouteText(p);
 
-        // ${flClass} applied to the outer .plan-card div
         list.innerHTML += `
             <div class="plan-card ${flClass}">
                 <div style="font-weight:bold; font-size: 16px;">
@@ -305,10 +328,9 @@ function copyAllPlans() {
     let allText = "";
     plans.forEach(p => {
         allText += `[${p.callsign}] [F${p.fl}] - ${p.dep} TO ${p.dest} - ${p.speed}kts\n`;
-        allText += generateRouteText(p);
+        allText += generateRouteText(p).replace(/<[^>]*>/g, ''); 
         allText += `\n-------------------------\n\n`;
     });
-    
     navigator.clipboard.writeText(allText).then(() => { alert("All flight plans copied to clipboard!"); });
 }
 
@@ -329,7 +351,6 @@ function editPlan(idx) {
     
     currentRoute = [...p.route];
     
-    // Auto-Select Airway Logic (Runs invisibly based on rawRoute)
     let foundAirways = [];
     if (p.rawRoute) {
         let parts = p.rawRoute.split(/\s+/);
@@ -372,7 +393,6 @@ function importPlans(e) {
     const reader = new FileReader();
     reader.onload = (ev) => { 
         plans = JSON.parse(ev.target.result); 
-        // Ensure imported plans have IDs so Undo Sort doesn't break
         plans.forEach(pl => { if(pl.id === undefined) pl.id = globalPlanId++; });
         renderPlans(); 
     };
