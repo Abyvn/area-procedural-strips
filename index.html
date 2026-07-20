@@ -2,99 +2,429 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ATC Flight Plan Manager</title>
+    <!-- CRITICAL FOR MOBILE: Viewport scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>ATC Flight Plan Manager - Pro Terminal</title>
     <style>
-        :root { --bg: #12181f; --panel: #1f2a38; --text: #ecf0f1; --even: #3498db; --odd: #f1c40f; }
-        body { font-family: 'Courier New', monospace; background: var(--bg); color: var(--text); padding: 20px; }
-        .container { max-width: 800px; margin: auto; }
-        .builder-panel { background: var(--panel); padding: 20px; border-radius: 8px; border: 1px solid #4f5d73; margin-bottom: 20px; transition: 0.3s; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
-        input, select, button, textarea { padding: 10px; background: #0d131a; color: #fff; border: 1px solid #4f5d73; border-radius: 4px; box-sizing: border-box; font-family: 'Courier New', monospace;}
-        button { cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #34495e; }
-        textarea { width: 100%; resize: vertical; margin-bottom: 10px; }
+        :root {
+            --bg: #0b0f14;
+            --panel: #161e29;
+            --panel-header: #1f2b3a;
+            --border: #2c3b4e;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --input-bg: #090d12;
+            
+            /* Status Accents */
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            
+            /* Strip Directional Colorways */
+            --strip-even: #2563eb;
+            --strip-odd: #d97706;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: var(--bg); 
+            color: var(--text-main); 
+            padding: 20px; 
+            margin: 0;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container { 
+            max-width: 1400px; 
+            margin: auto; 
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 24px;
+        }
+
+        /* Sticky Header for Mobile Convenience */
+        #lockBar {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: var(--panel); 
+            padding: 12px 24px; 
+            border-bottom: 1px solid var(--border); 
+            margin-bottom: 24px; 
+            border-radius: 8px;
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Panels */
+        .panel { 
+            background: var(--panel); 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
         
-        .plan-card { padding: 15px; margin-bottom: 15px; border-radius: 4px; position: relative; }
+        .panel-header {
+            background: var(--panel-header);
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-main);
+        }
+
+        .panel-body { padding: 20px; }
         
-        /* Full Background Strip Colors */
-        .plan-card.even-fl { background-color: var(--even); color: #ffffff; border-left: 5px solid #21618c; }
-        .plan-card.odd-fl { background-color: var(--odd); color: #000000; border-left: 5px solid #b7950b; }
+        /* Forms & Inputs */
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
         
-        .route-path { font-size: 14px; margin-top: 10px; color: #00ff00; background: #000; padding: 10px; border-radius: 4px; white-space: pre-wrap; line-height: 1.4; }
-        .controls { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
-        #currentRouteDisplay { margin: 10px 0; padding: 10px; background: #000; border: 1px dashed #4f5d73; min-height: 20px; color: #aaa; }
-        .section-title { margin-top: 0; color: var(--odd); font-size: 18px; border-bottom: 1px solid #4f5d73; padding-bottom: 5px; margin-bottom: 15px; }
+        .input-group { display: flex; flex-direction: column; gap: 4px; }
+        .input-group label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+
+        /* 16px font-size prevents iOS Safari from automatically zooming in */
+        input, select, textarea { 
+            padding: 12px; 
+            background: var(--input-bg); 
+            color: #fff; 
+            border: 1px solid var(--border); 
+            border-radius: 6px; 
+            font-size: 16px; 
+            transition: all 0.2s;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
         
-        /* Lock Mode Styles */
-        body.locked .builder-panel { display: none; }
-        body.locked .controls { display: none; }
+        /* Buttons */
+        button { 
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer; 
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        button.btn-primary { background: var(--primary); color: white; }
+        button.btn-primary:active { background: #2563eb; transform: scale(0.98); }
+        button.btn-success { background: var(--success); color: white; }
+        button.btn-success:active { background: #059669; transform: scale(0.98); }
+        button.btn-danger { background: var(--danger); color: white; }
+        button.btn-danger:active { background: #dc2626; transform: scale(0.98); }
+        button.btn-secondary { background: #334155; color: white; border: 1px solid var(--border); }
+        button.btn-secondary:active { background: #475569; transform: scale(0.98); }
+
+        #currentRouteDisplay { 
+            margin: 12px 0; 
+            padding: 12px; 
+            background: #000; 
+            border-radius: 6px;
+            border: 1px dashed var(--border); 
+            min-height: 24px; 
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        /* Top Action Bar */
+        .board-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: var(--panel);
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            align-items: center;
+        }
+
+        .search-bar { flex-grow: 1; min-width: 200px; position: relative; }
+        .search-bar input { width: 100%; padding-left: 36px; }
+        .search-bar::before {
+            content: "🔍";
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            opacity: 0.5;
+        }
+
+        /* Flight Strips Cards layout */
+        .strip-list { display: flex; flex-direction: column; gap: 12px; }
         
-        #lockBar { display: flex; justify-content: space-between; align-items: center; background: #0d131a; padding: 10px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #4f5d73; }
+        .plan-card { 
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px; 
+            position: relative; 
+            overflow: hidden;
+            display: grid;
+            grid-template-rows: auto auto auto;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .plan-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+        }
+        .plan-card.even-fl::before { background: var(--strip-even); }
+        .plan-card.odd-fl::before { background: var(--strip-odd); }
         
-        /* Print Styles - Auto Hides UI when printing */
-        @media print {
-            .builder-panel, #lockBar, .controls { display: none !important; }
-            body { background: #fff; color: #000; }
-            .plan-card { background: #fff; border: 1px solid #000; border-left: 5px solid #000; break-inside: avoid; }
-            .route-path { background: #f0f0f0; color: #000; border: 1px solid #ccc; }
+        .card-main-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px 12px 22px;
+            background: var(--panel-header);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .aircraft-identity { display: flex; align-items: center; gap: 12px; }
+        .callsign-badge { font-family: 'Courier New', monospace; font-weight: bold; font-size: 18px; color: #fff; letter-spacing: 1px; }
+        .fl-tag { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .plan-card.even-fl .fl-tag { background: rgba(37, 99, 235, 0.2); color: #60a5fa; border: 1px solid #2563eb; }
+        .plan-card.odd-fl .fl-tag { background: rgba(217, 119, 6, 0.2); color: #fbbf24; border: 1px solid #d97706; }
+
+        .flight-profile { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        .flight-profile strong { color: #fff; }
+
+        .route-path { 
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 13px; 
+            color: #10b981; 
+            background: #06090d; 
+            padding: 14px; 
+            margin: 12px 16px;
+            border-radius: 6px; 
+            white-space: pre-wrap; 
+            line-height: 1.6;
+            border: 1px solid #1e293b;
+        }
+        
+        .card-actions {
+            padding: 0 16px 12px 16px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Lock State Layer Override */
+        body.locked .left-column { display: none; }
+        body.locked .card-actions { display: none; }
+        body.locked .global-edit-btn { display: none; }
+        body.locked .app-container { grid-template-columns: 1fr; }
+
+        #toastContainer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            left: 20px; /* Stretch on mobile */
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #1e293b;
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+            font-size: 14px;
+            font-weight: 500;
+            animation: slideIn 0.2s ease-out;
+            pointer-events: auto;
+        }
+        @keyframes slideIn { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        /* ========================================= */
+        /* RESPONSIVE MOBILE BREAKPOINTS             */
+        /* ========================================= */
+        
+        /* Tablets and smaller */
+        @media (max-width: 1024px) {
+            .app-container { grid-template-columns: 1fr; }
+        }
+
+        /* Phones */
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            
+            #lockBar {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 16px;
+                gap: 12px;
+            }
+            #lockBar h2 { font-size: 16px; justify-content: center; }
+
+            .grid, .grid-3 { grid-template-columns: 1fr; gap: 12px; }
+            
+            .board-controls { flex-direction: column; align-items: stretch; }
+            .board-controls button { width: 100%; }
+
+            .card-main-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 16px 16px 16px 22px;
+            }
+
+            .card-actions {
+                flex-direction: column;
+            }
+            .card-actions button { width: 100%; padding: 12px; }
+
+            .route-path {
+                margin: 10px;
+                font-size: 12px; /* Prevent horizontal scrolling on long logs */
+            }
+
+            #toastContainer {
+                bottom: 10px; right: 10px; left: 10px;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="lockBar">
-        <h3 style="margin: 0; color: #ecf0f1;">ATC Board</h3>
-        <button id="lockToggleBtn" onclick="toggleLock()" style="background: #e74c3c;">🔒 Enter Lock / View Mode</button>
+<div id="lockBar">
+    <h2 style="margin: 0; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">📡 Terminal Board</h2>
+    <button id="lockToggleBtn" class="btn-danger" onclick="toggleLock()">🔒 Hide Editor / View Board</button>
+</div>
+
+<div class="app-container">
+    <!-- Left Column: Operations Input Matrix -->
+    <div class="left-column">
+        <div class="panel">
+            <div class="panel-header">Bulk Spreadsheet Import</div>
+            <div class="panel-body">
+                <textarea id="bulkPaste" rows="3" placeholder="Paste structural tabular row lines here..."></textarea>
+                <button class="btn-primary" onclick="parseTable()" style="width: 100%; margin-top: 8px;">Parse Matrix Rows</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">Route Editor Deck</div>
+            <div class="panel-body">
+                <div class="grid">
+                    <div class="input-group">
+                        <label>Callsign</label>
+                        <input type="text" id="callsign" placeholder="e.g. SEY489">
+                    </div>
+                    <div class="input-group">
+                        <label>Altitude (FL)</label>
+                        <input type="number" id="fl" placeholder="e.g. 390">
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="input-group">
+                        <label>Entry Time</label>
+                        <input type="number" id="entryTime" placeholder="e.g. 1200">
+                    </div>
+                    <div class="input-group">
+                        <label>Departure</label>
+                        <input type="text" id="depArpt" placeholder="e.g. VRMM" style="text-transform: uppercase;">
+                    </div>
+                    <div class="input-group">
+                        <label>Destination</label>
+                        <input type="text" id="destArpt" placeholder="e.g. ELKEL" style="text-transform: uppercase;">
+                    </div>
+                </div>
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label>Cruising Performance Speed</label>
+                    <select id="acSpeed">
+                        <option value="230">230 kts</option>
+                        <option value="300">300 kts</option>
+                        <option value="450">450 kts</option>
+                        <option value="480" selected>480 kts</option>
+                        <option value="500">500 kts</option>
+                    </select>
+                </div>
+
+                <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border)">
+                    <div class="grid-3">
+                        <div class="input-group">
+                            <label>Airway</label>
+                            <select id="awy" onchange="populateWaypoints()"><option value="">-- Select --</option></select>
+                        </div>
+                        <div class="input-group">
+                            <label>Waypoint Fix</label>
+                            <select id="fix"></select>
+                        </div>
+                        <div class="input-group" style="justify-content: flex-end;">
+                            <button class="btn-primary" onclick="addFix()">+ Add</button>
+                        </div>
+                    </div>
+                    <button class="btn-secondary" onclick="undoFix()" style="width:100%; margin-top: 4px;">↩ Undo Last Fix</button>
+                </div>
+
+                <div id="currentRouteDisplay">Current Route: (Empty Layout)</div>
+
+                <div class="grid" style="margin-top: 16px;">
+                    <button class="btn-success" onclick="savePlan()">💾 Save Strip</button>
+                    <button class="btn-secondary" onclick="clearCurrentForm()">Reset Form</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="builder-panel">
-        <h2 class="section-title">Bulk Import (Excel/Text)</h2>
-        <textarea id="bulkPaste" rows="4" placeholder="Paste your Excel table rows here..."></textarea>
-        <button onclick="parseTable()" style="background:#8e44ad; width: 100%;">Parse Table Data</button>
-    </div>
-
-    <div class="builder-panel">
-        <h2 class="section-title">Route Builder & Editor</h2>
-        <div class="grid">
-            <input type="text" id="callsign" placeholder="Callsign">
-            <input type="text" id="fl" placeholder="FL (e.g. 350)">
-            <input type="text" id="entryTime" placeholder="Entry (e.g. 0701)">
-            <input type="text" id="depArpt" placeholder="DEP">
-            <input type="text" id="destArpt" placeholder="DEST">
-            <select id="acSpeed">
-                <option value="230">230 kts</option><option value="300">300 kts</option>
-                <option value="450">450 kts</option><option value="480" selected>480 kts</option><option value="500">500 kts</option>
-            </select>
-        </div>
-        
-        <div class="grid">
-            <select id="awy" onchange="populateWaypoints()"><option value="">-- Airway --</option></select>
-            <select id="fix"></select>
-            <button onclick="addFix()" style="background:#2980b9;">+ Add Fix</button>
-            <button onclick="undoFix()" style="background:#e67e22;">Undo Last Fix</button>
-        </div>
-
-        <div id="currentRouteDisplay">Current Route: (Empty)</div>
-
-        <div class="controls">
-            <button onclick="savePlan()" style="background:#27ae60; flex-grow: 1;">Save Flight Plan</button>
-            <button onclick="clearCurrentForm()" style="background:#c0392b;">Reset Form</button>
-        </div>
-        
-        <hr style="border-color: #4f5d73; margin: 15px 0;">
-        <div class="controls">
-            <button onclick="sortPlans()" style="background:#f39c12; flex-grow: 1;">Sort by ETA</button>
-            <button onclick="undoSort()" style="background:#d35400; flex-grow: 1;">Undo Sort</button>
-            <button onclick="copyAllPlans()" style="background:#2c3e50; flex-grow: 1;">Copy All Plans</button>
-            <button onclick="exportPlans()">Export (.json)</button>
-            <button onclick="document.getElementById('importFile').click()">Import (.json)</button>
+    <!-- Right Column: Live Radar Strip Manifest Flight Board -->
+    <div class="right-column">
+        <div class="board-controls">
+            <div class="search-bar">
+                <input type="text" id="searchFilter" oninput="handleSearch(this)" placeholder="Filter by Call, DEP, DEST...">
+            </div>
+            <button class="btn-secondary global-edit-btn" onclick="sortPlans()">Sort (ETA)</button>
+            <button class="btn-secondary global-edit-btn" onclick="undoSort()">Clear Sort</button>
+            <button class="btn-secondary" onclick="copyAllPlans()">Copy Raw Text</button>
+            <button class="btn-success" onclick="copyToExcelFormat()">📋 Copy Matrix</button>
+            <button class="btn-secondary global-edit-btn" onclick="exportPlans()">Export JSON</button>
+            <button class="btn-secondary global-edit-btn" onclick="document.getElementById('importFile').click()">Import JSON</button>
             <input type="file" id="importFile" onchange="importPlans(event)" style="display:none">
         </div>
-    </div>
 
-    <div id="planList"></div>
+        <div id="planList" class="strip-list"></div>
+    </div>
 </div>
+
+<div id="toastContainer"></div>
 
 <script>
 const officialChartData = {
@@ -112,26 +442,44 @@ const officialChartData = {
 };
 
 let plans = [], editingIndex = -1, currentRoute = [];
-let isLocked = false;
-let globalPlanId = 0;
+let isLocked = false, globalPlanId = 0, searchQuery = "";
+
+function showToast(message) {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerText = message;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
+}
+
+function escapeHTML(str) {
+    return String(str).replace(/[&<>'"]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[m]));
+}
+
+function getLegData(airway, fixA, fixB) {
+    const legs = officialChartData[airway]?.legs || {};
+    return legs[`${fixA}-${fixB}`] || legs[`${fixB}-${fixA}`] || null;
+}
 
 function toggleLock() {
     isLocked = !isLocked;
     const btn = document.getElementById("lockToggleBtn");
     if(isLocked) {
         document.body.classList.add("locked");
-        btn.innerHTML = "🔓 Unlock Builder";
-        btn.style.background = "#27ae60";
+        btn.innerHTML = "🔓 Unlock Tactical Radar";
+        btn.className = "btn-success";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         document.body.classList.remove("locked");
-        btn.innerHTML = "🔒 Enter Lock / View Mode";
-        btn.style.background = "#e74c3c";
+        btn.innerHTML = "🔒 Hide Editor / View Board";
+        btn.className = "btn-danger";
     }
 }
 
 function parseTable() {
     const rawData = document.getElementById("bulkPaste").value.trim();
-    if (!rawData) { alert("Please paste data first."); return; }
+    if (!rawData) { showToast("Error: No strings found."); return; }
     
     const rows = rawData.split('\n');
     let added = 0;
@@ -143,7 +491,7 @@ function parseTable() {
         if (cols.length >= 6) {
             try {
                 const callsign = cols[1].trim();
-                const speed = cols[3].replace(/\D/g, '').trim(); 
+                const speed = String(parseInt(cols[3].replace(/\D/g, '').trim(), 10)); 
                 const fl = cols[4].trim();
                 const rawRouteText = cols[5].trim();
                 
@@ -158,23 +506,15 @@ function parseTable() {
                 }
 
                 plans.push({
-                    id: globalPlanId++, 
-                    callsign: callsign,
-                    fl: fl,
-                    time: time,
-                    dep: dep,
-                    dest: dest,
-                    speed: speed,
-                    rawRoute: rawRouteText,
-                    route: [] 
+                    id: globalPlanId++, callsign, fl, time, dep, dest, speed, rawRoute: rawRouteText, route: [] 
                 });
                 added++;
-            } catch(e) { console.error("Error parsing row: ", row); }
+            } catch(e) { console.error("Error parsing profile: ", row); }
         }
     });
     
     document.getElementById("bulkPaste").value = "";
-    if (added > 0) { alert(`Successfully imported ${added} draft flight plans!`); }
+    if (added > 0) { showToast(`Imported ${added} profile entries.`); }
     renderPlans();
 }
 
@@ -182,17 +522,17 @@ function populateWaypoints() {
     const awy = document.getElementById("awy").value;
     const select = document.getElementById("fix");
     select.innerHTML = "";
-    if(officialChartData[awy]) officialChartData[awy].fixes.forEach(f => select.innerHTML += `<option value="${f}">${f}</option>`);
+    if(officialChartData[awy]) officialChartData[awy].fixes.forEach(f => select.innerHTML += `<option value="${escapeHTML(f)}">${escapeHTML(f)}</option>`);
 }
 
 function updateLiveRouteDisplay() {
     const display = document.getElementById("currentRouteDisplay");
     if(currentRoute.length === 0) {
-        display.innerHTML = "Current Route: (Empty)";
-        display.style.color = "#aaa";
+        display.innerHTML = "Route Map: (No points loaded)";
+        display.style.color = "var(--text-muted)";
     } else {
-        display.innerHTML = "Current Route: " + currentRoute.map(r => `${r.fix} (${r.awy})`).join(" ➔ ");
-        display.style.color = "#00ff00";
+        display.innerHTML = "Sequence: " + currentRoute.map(r => `${escapeHTML(r.fix)} (${escapeHTML(r.awy)})`).join(" ➔ ");
+        display.style.color = "var(--success)";
     }
 }
 
@@ -222,48 +562,40 @@ function savePlan() {
         rawRoute: editingIndex > -1 ? plans[editingIndex].rawRoute : "",
         route: [...currentRoute]
     };
+    
     if(editingIndex > -1) plans[editingIndex] = p; else plans.push(p);
+    
+    editingIndex = -1;
     clearCurrentForm(); 
+    renderPlans();
+    showToast("Profile entry card updated.");
+}
+
+function handleSearch(input) {
+    searchQuery = input.value.toLowerCase();
     renderPlans();
 }
 
 function sortPlans() {
-    if (plans.length === 0) return;
-    plans.sort((a, b) => {
-        let timeA = parseInt(a.time.replace(/\D/g, '')) || 0;
-        let timeB = parseInt(b.time.replace(/\D/g, '')) || 0;
-        return timeA - timeB;
-    });
+    plans.sort((a, b) => (parseInt(a.time.replace(/\D/g, '')) || 0) - (parseInt(b.time.replace(/\D/g, '')) || 0));
     renderPlans();
+    showToast("Board sorted chronologically by ETA.");
 }
 
 function undoSort() {
-    if (plans.length === 0) return;
     plans.sort((a, b) => a.id - b.id);
     renderPlans();
 }
 
 function generateRouteText(p) {
-    if (!p.route || p.route.length === 0) return "No compiled waypoints. Click 'Edit' to build this route.";
+    if (!p.route || p.route.length === 0) return "No data sequence loaded. Click 'Edit Card' to overlay tracking points.";
     
-    // Strict Speed Validation & Color Mapping
-    const speedColors = {
-        "230": "#9b59b6", // Purple
-        "300": "#2ecc71", // Green
-        "450": "#3498db", // Blue
-        "480": "#ffffff", // White
-        "500": "#e74c3c"  // Red
-    };
-
-    if (!speedColors[p.speed]) {
-        return `<span style="color: #e74c3c; font-weight: bold; background: #330000; padding: 5px;">[ERROR] Calculation halted: Invalid speed (${p.speed} kts). Must be 230, 300, 450, 480, or 500.</span>`;
-    }
+    const speedColors = { "230": "#9b59b6", "300": "#2ecc71", "450": "#3498db", "480": "#ffffff", "500": "#e74c3c" };
+    if (!speedColors[p.speed]) return `[ERROR] Execution Failure: Vector parsing mismatch.`;
 
     let routeString = "";
     let mins = parseInt(p.time.substring(0,2)) * 60 + parseInt(p.time.substring(2,4));
     if(isNaN(mins)) mins = 0;
-
-    let baseColor = speedColors[p.speed];
 
     p.route.forEach((node, i) => {
         let h = String(Math.floor((mins % 1440) / 60)).padStart(2, '0');
@@ -271,30 +603,24 @@ function generateRouteText(p) {
         
         if (i < p.route.length - 1) {
             let nextNode = p.route[i+1];
-            let data = officialChartData[nextNode.awy].legs[`${node.fix}-${nextNode.fix}`] || officialChartData[nextNode.awy].legs[`${nextNode.fix}-${node.fix}`];
+            let data = getLegData(nextNode.awy, node.fix, nextNode.fix);
             let legTime = data ? (data[p.speed] || 6) : 6;
             
-            // Fixed VRMM Rule: Must be a VRMM flight, 50nm dist, AND the leg must explicitly connect to the MLE fix
             let isVRMM50nmLeg = false;
             if ((p.dep === "VRMM" || p.dest === "VRMM") && data && data.dist === 50 && (node.fix === "MLE" || nextNode.fix === "MLE")) {
                 legTime = 10;
                 isVRMM50nmLeg = true;
             }
             
-            let timeString = "";
-            if (isVRMM50nmLeg) {
-                timeString = `<span style="color:#ff00ff; font-weight:bold;">+${legTime}m</span>`;
-            } else {
-                timeString = `<span style="color:${baseColor}; font-weight:bold;">+${legTime}m</span>`;
-            }
+            let timeStr = isVRMM50nmLeg ? `+${legTime}m` : `+${legTime}m`;
+            let clr = isVRMM50nmLeg ? "#ff00ff" : speedColors[p.speed];
             
-            routeString += `[${timeString}] [${nextNode.awy}] [${node.fix}] [${h}${m}]\n`;
+            routeString += `[<span style="color:${clr}; font-weight:bold;">${timeStr}</span>] [${escapeHTML(nextNode.awy)}] [${escapeHTML(node.fix)}] ➔ [${h}${m}]\n`;
             mins += legTime; 
         } else {
-            routeString += `[----] [${node.awy}] [${node.fix}] [${h}${m}]\n`;
+            routeString += `[----] [${escapeHTML(node.awy)}] [${escapeHTML(node.fix)}] ➔ [${h}${m}]\n`;
         }
     });
-
     return routeString;
 }
 
@@ -302,36 +628,85 @@ function renderPlans() {
     const list = document.getElementById("planList");
     list.innerHTML = "";
     
-    plans.forEach((p, idx) => {
+    const filtered = plans.filter(p => 
+        p.callsign.toLowerCase().includes(searchQuery) ||
+        p.dep.toLowerCase().includes(searchQuery) ||
+        p.dest.toLowerCase().includes(searchQuery)
+    );
+
+    if (filtered.length === 0) {
+        list.innerHTML = `<div class="empty-state"><h3>No active flight strips</h3><p>Create a tracking block or adjust filters.</p></div>`;
+        return;
+    }
+
+    filtered.forEach((p, idx) => {
         let flNum = parseInt(p.fl);
         if (isNaN(flNum)) flNum = 0;
-        let isAviationEven = Math.floor(flNum / 10) % 2 === 0;
-        let flClass = isAviationEven ? 'even-fl' : 'odd-fl';
+        let flClass = (Math.floor(flNum / 10) % 2 === 0) ? 'even-fl' : 'odd-fl';
         let routeString = generateRouteText(p);
+        let actualIndex = plans.indexOf(p);
 
         list.innerHTML += `
             <div class="plan-card ${flClass}">
-                <div style="font-weight:bold; font-size: 16px;">
-                    [${p.callsign}] [F${p.fl}] - ${p.dep} TO ${p.dest} - ${p.speed}kts
+                <div class="card-main-row">
+                    <div class="aircraft-identity">
+                        <span class="callsign-badge">${escapeHTML(p.callsign)}</span>
+                        <span class="fl-tag">FL${escapeHTML(p.fl)}</span>
+                    </div>
+                    <div class="flight-profile">
+                        <strong>${escapeHTML(p.dep)}</strong> ➔ <strong>${escapeHTML(p.dest)}</strong> &nbsp;|&nbsp; <strong>${escapeHTML(p.speed)} KT</strong>
+                    </div>
                 </div>
                 <div class="route-path">${routeString}</div>
-                <div class="controls">
-                    <button onclick="editPlan(${idx})" style="background:#34495e; color:#fff; border:none;">Edit</button>
-                    <button onclick="plans.splice(${idx},1); renderPlans()" style="background:#e74c3c; color:#fff; border:none;">Delete</button>
+                <div class="card-actions">
+                    <button class="btn-secondary" onclick="editPlan(${actualIndex}); window.scrollTo({top: 0, behavior: 'smooth'});">🛠️ Edit Card</button>
+                    <button class="btn-danger" onclick="plans.splice(${actualIndex},1); renderPlans(); showToast('Strip purged.');">Delete</button>
                 </div>
             </div>`;
     });
 }
 
 function copyAllPlans() {
-    if(plans.length === 0) { alert("No flight plans to copy!"); return; }
+    if(plans.length === 0) { showToast("Board empty."); return; }
     let allText = "";
     plans.forEach(p => {
         allText += `[${p.callsign}] [F${p.fl}] - ${p.dep} TO ${p.dest} - ${p.speed}kts\n`;
         allText += generateRouteText(p).replace(/<[^>]*>/g, ''); 
         allText += `\n-------------------------\n\n`;
     });
-    navigator.clipboard.writeText(allText).then(() => { alert("All flight plans copied to clipboard!"); });
+    navigator.clipboard.writeText(allText).then(() => { showToast("Text block stored to clipboard."); });
+}
+
+function copyToExcelFormat() {
+    if (plans.length === 0) { showToast("No active data tracking vectors to parse."); return; }
+    let outputText = "ROUTE:\n";
+
+    plans.forEach(p => {
+        if (!p.route || p.route.length === 0) return;
+        let mins = parseInt(p.time.substring(0,2)) * 60 + parseInt(p.time.substring(2,4)) || 0;
+        let timelineParts = [];
+
+        p.route.forEach((node, i) => {
+            let h = String(Math.floor((mins % 1440) / 60)).padStart(2, '0');
+            let m = String(mins % 60).padStart(2, '0');
+            timelineParts.push(`${node.fix} - ${h}${m}`);
+
+            if (i < p.route.length - 1) {
+                let nextNode = p.route[i+1];
+                let data = getLegData(nextNode.awy, node.fix, nextNode.fix);
+                let legTime = data ? (data[p.speed] || 6) : 6;
+                if ((p.dep === "VRMM" || p.dest === "VRMM") && data && data.dist === 50 && (node.fix === "MLE" || nextNode.fix === "MLE")) {
+                    legTime = 10;
+                }
+                mins += legTime;
+            }
+        });
+        outputText += `${p.callsign}\t${timelineParts.join(" / ")}\t${p.fl}\n`;
+    });
+
+    navigator.clipboard.writeText(outputText).then(() => {
+        showToast("Column matrices copied! Ready to paste.");
+    });
 }
 
 function editPlan(idx) {
@@ -345,21 +720,19 @@ function editPlan(idx) {
     
     let speedDrop = document.getElementById("acSpeed");
     if(!Array.from(speedDrop.options).some(opt => opt.value === p.speed)) {
-        speedDrop.innerHTML += `<option value="${p.speed}">${p.speed} kts</option>`;
+        speedDrop.innerHTML += `<option value="${escapeHTML(p.speed)}">${escapeHTML(p.speed)} kts</option>`;
     }
     speedDrop.value = p.speed;
-    
     currentRoute = [...p.route];
     
     let foundAirways = [];
     if (p.rawRoute) {
-        let parts = p.rawRoute.split(/\s+/);
-        parts.forEach(part => {
+        p.rawRoute.split(/\s+/).forEach(part => {
             let match = Object.keys(officialChartData).find(k => k === part || k.split('_').includes(part));
-            if (match && !foundAirways.includes(match)) {
-                foundAirways.push(match);
-            }
+            if (match && !foundAirways.includes(match)) foundAirways.push(match);
         });
+    } else if (p.route && p.route.length > 0) {
+        foundAirways = [...new Set(p.route.map(r => r.awy))];
     }
     
     let awyDrop = document.getElementById("awy");
@@ -370,15 +743,14 @@ function editPlan(idx) {
         awyDrop.value = "";
         document.getElementById("fix").innerHTML = "";
     }
-    
     updateLiveRouteDisplay();
-    window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    
+    if (isLocked) toggleLock(); // Auto-unlock to show the editor
 }
 
 function clearCurrentForm() { 
-    editingIndex = -1; 
-    currentRoute = []; 
-    document.querySelectorAll('input[type="text"]').forEach(i => i.value = ''); 
+    editingIndex = -1; currentRoute = []; 
+    document.querySelectorAll('.left-column input[type="text"], .left-column input[type="number"]').forEach(i => i.value = ''); 
     document.getElementById("awy").value = "";
     document.getElementById("fix").innerHTML = "";
     updateLiveRouteDisplay();
@@ -395,11 +767,13 @@ function importPlans(e) {
         plans = JSON.parse(ev.target.result); 
         plans.forEach(pl => { if(pl.id === undefined) pl.id = globalPlanId++; });
         renderPlans(); 
+        showToast("JSON configurations tracking database loaded.");
     };
     reader.readAsText(e.target.files[0]);
 }
 
-Object.keys(officialChartData).forEach(a => document.getElementById("awy").innerHTML += `<option value="${a}">${a}</option>`);
+Object.keys(officialChartData).forEach(a => document.getElementById("awy").innerHTML += `<option value="${escapeHTML(a)}">${escapeHTML(a)}</option>`);
+renderPlans();
 </script>
 </body>
 </html>
